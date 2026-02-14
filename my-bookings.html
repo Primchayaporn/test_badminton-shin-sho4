@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการจองของฉัน - SHIN-SHO</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* สไตล์เฉพาะตัวสำหรับการ์ดรายการจอง */
+        .booking-card { 
+            padding: 18px; 
+            border-radius: 15px; 
+            margin-bottom: 15px; 
+            border-left: 6px solid #f59e0b; /* สีส้ม: รอชำระเงิน */
+            background: white; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            text-align: left;
+            position: relative;
+        }
+        
+        /* สไตล์เมื่อชำระเงินแล้ว */
+        .booking-card.paid { 
+            border-left-color: #00c853; /* สีเขียว: ชำระเงินแล้ว */
+        }
+
+        .status-text {
+            float: right; 
+            font-weight: 600; 
+            font-size: 13px;
+        }
+
+        .court-title {
+            color: var(--primary);
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .booking-info {
+            color: #64748b;
+            font-size: 14px;
+            margin: 3px 0;
+        }
+
+        .btn-cancel {
+            margin-top: 12px; 
+            background: #fee2e2; 
+            color: #ef4444; 
+            padding: 8px; 
+            width: 100%;
+            border: none;
+            font-family: 'Kanit';
+            font-weight: 600;
+            font-size: 14px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-cancel:hover {
+            background: #fecaca;
+        }
+
+        .paid-note {
+            display: block;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="logo">SHIN-SHO BADMINTON</a>
+    </header>
+
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h2>รายการจองของฉัน</h2>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="card">
+            <div id="list">
+                <p style="text-align:center; color:#94a3b8;">⏳ กำลังโหลดข้อมูล...</p>
+            </div>
+            
+            <div class="footer-nav" style="justify-content: center;">
+                <a href="index.html">← กลับหน้าจองสนาม</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const URL = CONFIG.WEB_APP_URL;
+        const userId = localStorage.getItem('userId');
+
+        // ตรวจสอบ Login
+        if (!userId) {
+            window.location.href = "login.html";
+        }
+
+        async function load() {
+            try {
+                const res = await fetch(`${URL}?action=getUserBookings&userId=${userId}`);
+                const data = await res.json();
+                
+                const listContainer = document.getElementById('list');
+                
+                if (data.length === 0) {
+                    listContainer.innerHTML = "<p style='text-align:center; padding:20px; color:#64748b;'>ไม่พบรายการจองของคุณ</p>";
+                    return;
+                }
+
+                listContainer.innerHTML = data.reverse().map(item => {
+                    const isPaid = item.status === 'ชำระเงินแล้ว';
+                    const statusColor = isPaid ? '#00c853' : '#f59e0b';
+                    
+                    return `
+                        <div class="booking-card ${isPaid ? 'paid' : ''}">
+                            <div class="status-text" style="color: ${statusColor}">${item.status}</div>
+                            <span class="court-title">🏸 สนาม ${item.court}</span>
+                            <div class="booking-info">📅 วันที่: ${item.date}</div>
+                            <div class="booking-info">⏰ เวลา: ${item.time} น.</div>
+                            
+                            ${!isPaid 
+                                ? `<button class="btn-cancel" onclick="del('${item.id}')">ยกเลิกการจอง</button>` 
+                                : '<span class="paid-note">* ชำระเงินแล้ว ไม่สามารถยกเลิกได้</span>'
+                            }
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                document.getElementById('list').innerHTML = "<p style='text-align:center; color:#ef4444;'>❌ โหลดข้อมูลล้มเหลว</p>";
+            }
+        }
+
+        async function del(id) {
+            if(!confirm("ยืนยันต้องการยกเลิกการจองสนามนี้ใช่หรือไม่?")) return;
+            
+            // แสดงสถานะกำลังลบ
+            const listContainer = document.getElementById('list');
+            listContainer.style.opacity = "0.5";
+
+            try {
+                const res = await fetch(URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "delete", id: id })
+                });
+                const result = await res.text();
+                
+                if (result === "Success") {
+                    load(); // โหลดข้อมูลใหม่
+                } else {
+                    alert("เกิดข้อผิดพลาด: " + result);
+                }
+            } catch (e) {
+                alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+            } finally {
+                listContainer.style.opacity = "1";
+            }
+        }
+
+        // เริ่มโหลดข้อมูลเมื่อเปิดหน้า
+        window.onload = load;
+    </script>
+</body>
+</html>

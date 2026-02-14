@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Admin - SHIN-SHO</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1a237e; --success: #00c853; --danger: #ef4444; --bg: #f4f6f9; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--bg); margin: 0; }
+        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-nav { text-decoration: none; color: white; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 12px; font-size: 14px; border:none; cursor:pointer; }
+        
+        .admin-grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+        @media (min-width: 1100px) { .admin-grid { grid-template-columns: 400px 1fr; } }
+
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* ตารางเวลา */
+        .status-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .status-table th { background: #f8f9fa; padding: 12px; color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .status-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; text-align: center; }
+        
+        .slot-free { color: var(--success); font-weight: 600; background: #e8f5e9; border-radius: 20px; padding: 4px 12px; font-size: 12px; }
+        .slot-busy { color: var(--danger); font-weight: 600; background: #ffebee; border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; border:none; }
+
+        /* ฟอร์มจอง Walk-in */
+        .walkin-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .walkin-form input, .walkin-form select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Kanit'; box-sizing: border-box; }
+        .btn-walkin { grid-column: span 2; background: var(--success); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; margin-top: 5px; }
+
+        /* ตารางรายการจอง */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #f8f9fa; padding: 12px; text-align: left; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; color: white; font-size: 11px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        #mSlip { width: 100%; max-height: 350px; object-fit: contain; margin: 15px 0; border-radius: 10px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">SHIN-SHO SUPER ADMIN</div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-nav" onclick="location.href='index.html'">🏠 หน้าแรก</button>
+        <button class="btn-nav" style="background:var(--danger);" onclick="logout()">🚪 ออก</button>
+    </div>
+</header>
+
+<div class="admin-grid">
+    <div>
+        <div class="card">
+            <h3 style="margin-top:0;">🏸 จอง Walk-in</h3>
+            <div class="walkin-form">
+                <input type="text" id="walkinName" placeholder="ชื่อผู้จอง (Walk-in)" style="grid-column: span 2;">
+                <input type="date" id="adminDate" onchange="loadAdminData()">
+                <select id="walkinCourt" onchange="loadAdminData()">
+                    <option value="A">สนาม A</option>
+                    <option value="B">สนาม B</option>
+                </select>
+                <select id="startTime" onchange="updateEndOptions()"></select>
+                <select id="endTime"></select>
+                <button class="btn-walkin" id="btnWalkin" onclick="bookWalkin()">➕ ยืนยันจองสนาม</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">📅 ตารางสถานะสนาม</h3>
+            <table class="status-table">
+                <thead><tr><th>เวลา</th><th>สนาม A</th><th>สนาม B</th></tr></thead>
+                <tbody id="gridBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">📋 รายการจองทั้งหมด</h3>
+            <button onclick="loadAll()" style="border:none; background:#e3f2fd; color:var(--primary); padding:8px 15px; border-radius:20px; cursor:pointer;">🔄 รีเฟรช</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead><tr><th>วัน/เวลา</th><th>สนาม</th><th>ผู้จอง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                <tbody id="adminAllBookings"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="manageModal" class="modal">
+    <div class="modal-content">
+        <h3 id="mTitle">รายละเอียด</h3>
+        <div id="mInfo" style="text-align:left; font-size:14px; background:#f8f9fa; padding:15px; border-radius:12px; margin-bottom:10px;"></div>
+        <img id="mSlip" src="" style="display:none;">
+        <p id="noSlipText" style="color:var(--danger); display:none;">❌ ไม่พบสลิป</p>
+        <button id="btnConfirmPay" class="btn-walkin" style="background:var(--primary); margin-bottom:10px;" onclick="confirmPayment()">✅ ยืนยันชำระเงิน</button>
+        <button class="btn-walkin" style="background:var(--danger);" onclick="deleteBooking()">🗑️ ลบการจอง</button>
+        <button onclick="closeModal()" style="background:none; border:none; color:#999; margin-top:10px; cursor:pointer;">ปิด</button>
+    </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+    const URL = CONFIG.WEB_APP_URL;
+    const times = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"];
+    let allData = [];
+    let currentId = "";
+
+    window.onload = () => {
+        document.getElementById('adminDate').value = new Date().toISOString().split('T')[0];
+        loadAll();
+    };
+
+    async function loadAll() {
+        const res = await fetch(`${URL}?action=getAllBookings`);
+        allData = await res.json();
+        renderMainTable();
+        loadAdminData();
+    }
+
+    function renderMainTable() {
+        document.getElementById('adminAllBookings').innerHTML = allData.map(item => `
+            <tr>
+                <td><b>${item.date}</b><br><small>${item.time}</small></td>
+                <td>สนาม ${item.court}</td>
+                <td>${item.userName}</td>
+                <td><span class="status-badge" style="background:${getStatusColor(item.status)}">${item.status}</span></td>
+                <td><button onclick="openManageModal('${item.id}')" style="cursor:pointer;">จัดการ</button></td>
+            </tr>
+        `).reverse().join('');
+    }
+
+    // โหลดตารางสถานะ และ อัปเดต Dropdown เวลา Walk-in (เหมือนหน้า Index)
+    function loadAdminData() {
+        const selectedDate = document.getElementById('adminDate').value;
+        const court = document.getElementById('walkinCourt').value;
+        
+        // 1. วาดตารางสถานะ
+        document.getElementById('gridBody').innerHTML = times.map(t => {
+            const bookingA = checkBookingAtTime(t, 'A', selectedDate);
+            const bookingB = checkBookingAtTime(t, 'B', selectedDate);
+            return `<tr><td>${t}</td><td>${renderSlot(bookingA)}</td><td>${renderSlot(bookingB)}</td></tr>`;
+        }).join('');
+
+        // 2. อัปเดต Dropdown "เวลาเริ่ม" สำหรับ Walk-in (กรองที่เต็มออก)
+        const available = times.filter(t => !checkBookingAtTime(t, court, selectedDate));
+        document.getElementById('startTime').innerHTML = available.map(t => `<option value="${t}">${t}</option>`).join('');
+        updateEndOptions();
+    }
+
+    function updateEndOptions() {
+        const start = document.getElementById('startTime').value;
+        if(!start) return;
+        const idx = times.indexOf(start);
+        let opt = "";
+        for(let i=idx+1; i<times.length; i++) opt += `<option value="${times[i]}">${times[i]}</option>`;
+        opt += `<option value="00:00">00:00</option>`;
+        document.getElementById('endTime').innerHTML = opt;
+    }
+
+    async function bookWalkin() {
+        const name = document.getElementById('walkinName').value;
+        if(!name) return alert("ระบุชื่อผู้จอง Walk-in");
+        
+        const btn = document.getElementById('btnWalkin');
+        btn.disabled = true; btn.innerText = "⏳ กำลังบันทึก...";
+
+        const payload = {
+            action: "booking",
+            userId: "WALK-IN",
+            userName: "Walk-in: " + name,
+            phone: "-",
+            courtId: document.getElementById('walkinCourt').value,
+            date: document.getElementById('adminDate').value,
+            startTime: document.getElementById('startTime').value,
+            endTime: document.getElementById('endTime').value,
+            status: "ชำระเงินแล้ว" // Walk-in มักจะจ่ายเงินสดเลย
+        };
+
+        await fetch(URL, { method: "POST", body: JSON.stringify(payload) });
+        alert("✅ จอง Walk-in สำเร็จ");
+        document.getElementById('walkinName').value = "";
+        btn.disabled = false; btn.innerText = "➕ ยืนยันจองสนาม";
+        loadAll();
+    }
+
+    // ฟังก์ชันช่วยเช็คเวลา
+    function checkBookingAtTime(time, court, selectedDate) {
+        const t = parseInt(time.replace(':',''));
+        return allData.find(b => {
+            if (b.court !== court || b.date !== formatDisplayDate(selectedDate) || b.status === "ยกเลิก") return false;
+            const [startStr, endStr] = b.time.split(' - ');
+            const s = parseInt(startStr.replace(':',''));
+            const e = (endStr === "00:00") ? 2400 : parseInt(endStr.replace(':',''));
+            return t >= s && t < e;
+        });
+    }
+
+    function renderSlot(booking) {
+        return booking ? `<button class="slot-busy" onclick="openManageModal('${booking.id}')">เต็ม (ดู)</button>` : `<span class="slot-free">ว่าง</span>`;
+    }
+
+    function openManageModal(id) {
+        const item = allData.find(x => x.id == id);
+        if(!item) return;
+        currentId = id;
+        document.getElementById('mTitle').innerText = `สนาม ${item.court} (${item.time})`;
+        document.getElementById('mInfo').innerHTML = `<b>ผู้จอง:</b> ${item.userName}<br><b>สถานะ:</b> ${item.status}`;
+        const img = document.getElementById('mSlip');
+        const noSlip = document.getElementById('noSlipText');
+        if(item.slip && item.slip.length > 50) { img.src = item.slip; img.style.display = "block"; noSlip.style.display = "none"; }
+        else { img.style.display = "none"; noSlip.style.display = "block"; }
+        document.getElementById('btnConfirmPay').style.display = (item.status === 'ชำระเงินแล้ว') ? 'none' : 'block';
+        document.getElementById('manageModal').style.display = "flex";
+    }
+
+    function closeModal() { document.getElementById('manageModal').style.display = "none"; }
+    async function confirmPayment() {
+        await fetch(URL, {method:"POST", body:JSON.stringify({action:"updateStatus", id:currentId})});
+        closeModal(); loadAll();
+    }
+    async function deleteBooking() {
+        if(!confirm("ลบการจอง?")) return;
+        await fetch(URL, {method:"POST", body:JSON.stringify({action:"delete", id:currentId})});
+        closeModal(); loadAll();
+    }
+    function getStatusColor(s) { return s === 'ชำระเงินแล้ว' ? '#00c853' : (s === 'ตรวจสอบสลิป' ? '#0288d1' : '#f59e0b'); }
+    function formatDisplayDate(dateStr) { const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y}`; }
+    function logout() { localStorage.clear(); location.href = "login.html"; }
+</script>
+</body>
+</html>

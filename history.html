@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ประวัติการจอง - My Bookings</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" style="width: 80%; max-width: 800px;">
+        <h1>ประวัติการจองของฉัน</h1>
+        <div id="bookingList">กำลังโหลดข้อมูล...</div>
+        <center><a href="index.html">กลับหน้าจองสนาม</a></center>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzCt_IsG1KuXnfSm2_oaNHAsQo1XJmrm7nxjmtUpOnfeoJZnU7YU4agU7c5LNt8qlJu3A/exec";
+        const userId = localStorage.getItem('userId');
+
+        // ดึงข้อมูลการจองเฉพาะของ User คนนี้
+        fetch(`${WEB_APP_URL}?action=getHistory&userId=${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('bookingList');
+                if (data.length === 0) {
+                    list.innerHTML = "<p>ยังไม่มีประวัติการจอง</p>";
+                    return;
+                }
+                let html = "<table border='1' style='width:100%; border-collapse:collapse;'><tr><th>วันที่</th><th>เวลา</th><th>สนาม</th><th>สถานะ</th></tr>";
+                data.forEach(row => {
+                    html += `<tr><td>${row.date}</td><td>${row.time}</td><td>สนาม ${row.court}</td><td>${row.status}</td></tr>`;
+                });
+                html += "</table>";
+                list.innerHTML = html;
+            });
+    </script>
+</body>
+</html>

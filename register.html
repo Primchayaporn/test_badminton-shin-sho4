@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ลงทะเบียน - SHIN-SHO</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* ใช้ CSS เดียวกับหน้า Index เพื่อให้สัดส่วนเป๊ะ */
+        .user-welcome {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-weight: 400;
+        }
+        
+        /* ปรับแต่งปุ่มให้กว้างเต็มและสไตล์เดียวกับ Index */
+        .btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .footer-link a {
+            color: #3949ab;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header><div class="logo">SHIN-SHO BADMINTON</div></header>
+
+    <section class="hero" style="height: 150px; background: #1a237e; display: flex; align-items: center; justify-content: center; color: white;">
+        <h2 style="margin: 0; font-weight: 600;">สมัครสมาชิก</h2>
+    </section>
+
+    <div class="container">
+        <div class="card">
+            <div class="user-welcome">🏸 เข้าร่วมกับ SHIN-SHO BADMINTON</div>
+
+            <div class="form-group">
+                <label>👤 ชื่อ-นามสกุล</label>
+                <input type="text" id="regName" placeholder="กรอกชื่อ-นามสกุล">
+            </div>
+
+            <div class="form-group">
+                <label>📧 อีเมล</label>
+                <input type="email" id="regEmail" placeholder="example@mail.com">
+            </div>
+
+            <div class="form-group">
+                <label>🔑 รหัสผ่าน</label>
+                <input type="password" id="regPassword" placeholder="กำหนดรหัสผ่าน">
+            </div>
+            
+            <div style="margin-bottom: 10px;"></div>
+
+            <p id="status" style="text-align: center; font-size: 14px; min-height: 20px; font-weight: 500; color: #1a237e;"></p>
+
+            <button class="btn" id="regBtn" onclick="register()">ลงทะเบียนสมาชิก</button>
+            
+            <div class="footer-link">
+                <a href="login.html">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        async function register() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const status = document.getElementById('status');
+            const btn = document.getElementById('regBtn');
+
+            if (!name || !email || !password) {
+                status.innerText = "❌ กรุณากรอกข้อมูลให้ครบ";
+                status.style.color = "#ef4444";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
+
+            try {
+                const res = await fetch(CONFIG.WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ 
+                        action: "register", 
+                        name: name, 
+                        email: email, 
+                        password: password 
+                    })
+                });
+                const result = await res.text();
+
+                if (result === "Success") {
+                    status.style.color = "#00c853";
+                    status.innerText = "✅ สำเร็จ! กำลังไปหน้าเข้าสู่ระบบ...";
+                    setTimeout(() => window.location.href = "login.html", 2000);
+                } else if (result === "User already exists") {
+                    status.style.color = "orange";
+                    status.innerText = "⚠️ อีเมลนี้ถูกใช้งานแล้ว";
+                    btn.disabled = false;
+                    btn.innerText = "ลงทะเบียนสมาชิก";
+                }
+            } catch (e) {
+                status.innerText = "❌ เชื่อมต่อผิดพลาด";
+                btn.disabled = false;
+                btn.innerText = "ลงทะเบียนสมาชิก";
+            }
+        }
+    </script>
+</body>
+</html>

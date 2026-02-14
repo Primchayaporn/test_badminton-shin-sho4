@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>จองสนาม - SHIN-SHO</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* CSS หลักที่คุณใช้อยู่ */
+        .table-responsive { border-radius: 15px; overflow: hidden; border: 1px solid #eee; margin: 15px 0 25px; }
+        .status-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .status-table th { background: #f8f9fa; padding: 12px; color: #1a237e; font-weight: 600; border-bottom: 2px solid #1a237e; }
+        .status-table td { padding: 10px; border-bottom: 1px solid #f0f0f0; text-align: center; }
+        .slot-free { color: #00c853; font-weight: 600; background: #e8f5e9; border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+        .slot-busy { color: #ef4444; font-weight: 400; background: #ffebee; border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+        .user-welcome { background: #f0f2f5; padding: 10px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 14px; }
+        
+        /* Modal ปรับปรุงใหม่ */
+        #paymentModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-card { background: white; padding: 25px; border-radius: 25px; width: 90%; max-width: 400px; text-align: center; }
+        .bank-info { background: #f1f8e9; padding: 15px; border-radius: 15px; margin: 15px 0; border: 2px solid #2e7d32; }
+        .copy-btn { background: #2e7d32; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 12px; cursor: pointer; margin-top: 8px; }
+        .preview-img { width: 100%; max-width: 150px; margin: 10px auto; border-radius: 10px; display: none; border: 2px solid #eee; }
+        .file-upload-label { display: block; background: #f0f2f5; padding: 12px; border-radius: 10px; border: 2px dashed #ccc; cursor: pointer; margin-top: 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header><div class="logo">SHIN-SHO BADMINTON</div></header>
+
+    <div class="container">
+        <div class="card">
+            <div id="userDisplay" class="user-welcome">👤 สวัสดีคุณ ...</div>
+
+            <div class="form-group">
+                <label>📅 วันที่จอง</label>
+                <input type="date" id="bookingDate" onchange="loadData()" style="width: 100%;">
+            </div>
+
+            <div class="table-responsive">
+                <table class="status-table">
+                    <thead><tr><th>เวลา</th><th>สนาม A</th><th>สนาม B</th></tr></thead>
+                    <tbody id="availabilityBody"></tbody>
+                </table>
+            </div>
+
+            <div class="form-group">
+                <label>🏸 สนาม</label>
+                <select id="courtId" onchange="loadData()"><option value="A">สนาม A</option><option value="B">สนาม B</option></select>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="form-group"><label>🕘 เริ่ม</label><select id="startTime" onchange="updateEnd()"></select></div>
+                <div class="form-group"><label>🕙 เลิก</label><select id="endTime"></select></div>
+            </div>
+
+            <div class="form-group">
+                <label>📞 เบอร์โทรศัพท์</label>
+                <input type="tel" id="userPhone" maxlength="10" placeholder="0XXXXXXXXX">
+            </div>
+
+            <p id="status" style="text-align:center; font-size:13px; color: #1a237e;"></p>
+            <button onclick="book()" id="btn" class="btn">ยืนยันการจองสนาม</button>
+            
+            <div class="footer-nav" style="display:flex; justify-content:space-between; margin-top:20px;">
+                <a href="my-bookings.html" style="text-decoration:none; color:#3949ab; font-size:14px;">📋 การจองของฉัน</a>
+                <a href="#" onclick="logout()" style="text-decoration:none; color:#ef4444; font-size:14px;">🚪 ออกจากระบบ</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="paymentModal">
+        <div class="modal-card">
+            <h3 style="color:#1a237e; margin:0;">💰 ชำระเงินค่าจอง</h3>
+            <div class="bank-info">
+                <p style="margin:0; font-size:13px;">กสิกรไทย (K-Bank)</p>
+                <h2 style="margin:5px 0; color:#2e7d32;" id="accNo">012-3-45678-9</h2>
+                <p style="margin:0; font-size:14px; font-weight:600;">ชื่อบัญชี: บจก. ชินโช แบดมินตัน</p>
+                <button class="copy-btn" onclick="copyAcc()">📋 คัดลอกเลขบัญชี</button>
+            </div>
+            
+            <div class="file-upload">
+                <label class="file-upload-label" for="slipFile">
+                    <span id="uploadTxt">📸 แตะเพื่อแนบสลิป/ถ่ายรูป</span>
+                    <input type="file" id="slipFile" accept="image/*" style="display:none;" onchange="handleFile(this)">
+                </label>
+                <canvas id="resizeCanvas" style="display:none;"></canvas>
+                <img id="imgPreview" class="preview-img">
+            </div>
+
+            <button onclick="uploadSlip()" id="uploadBtn" class="btn" style="background:#2e7d32; margin-top:15px; width:100%;">ส่งหลักฐานการโอน</button>
+            <button onclick="location.href='my-bookings.html'" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer; font-size:13px;">ไว้แนบภายหลัง</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const times = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"];
+        let currentBookingId = "";
+        let compressedImg = "";
+
+        window.onload = () => {
+            if(!localStorage.getItem('userName')) window.location.href = "login.html";
+            document.getElementById('userDisplay').innerText = "👤 สวัสดีคุณ " + localStorage.getItem('userName');
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bookingDate').value = today;
+            document.getElementById('bookingDate').min = today;
+            loadData();
+        }
+
+        function copyAcc() {
+            const accNo = document.getElementById('accNo').innerText;
+            navigator.clipboard.writeText(accNo).then(() => alert("คัดลอกเลขบัญชีแล้ว!"));
+        }
+
+        // ฟังก์ชันลดขนาดรูปภาพ (สำคัญมากสำหรับมือถือ)
+        function handleFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.getElementById('resizeCanvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 800;
+                        let width = img.width, height = img.height;
+                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+                        else { if (height > MAX_WIDTH) { width *= MAX_WIDTH / height; height = MAX_WIDTH; } }
+                        canvas.width = width; canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('imgPreview').src = compressedImg;
+                        document.getElementById('imgPreview').style.display = 'block';
+                        document.getElementById('uploadTxt').innerText = "✅ เลือกรูปเรียบร้อย";
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function loadData() {
+            const date = document.getElementById('bookingDate').value;
+            const court = document.getElementById('courtId').value;
+            const tbody = document.getElementById('availabilityBody');
+            if(!date) return;
+            try {
+                const res = await fetch(`${CONFIG.WEB_APP_URL}?action=getBusySlots&date=${date}`);
+                const allBusy = await res.json();
+                let html = "";
+                times.forEach(t => {
+                    const isA = checkBusy(t, allBusy, 'A'), isB = checkBusy(t, allBusy, 'B');
+                    html += `<tr><td>${t}</td><td><span class="${isA?'slot-busy':'slot-free'}">${isA?'เต็ม':'ว่าง'}</span></td>
+                             <td><span class="${isB?'slot-busy':'slot-free'}">${isB?'เต็ม':'ว่าง'}</span></td></tr>`;
+                });
+                tbody.innerHTML = html;
+                const avai = times.filter(t => !checkBusy(t, allBusy, court));
+                document.getElementById('startTime').innerHTML = avai.map(t => `<option value="${t}">${t}</option>`).join('');
+                updateEnd();
+            } catch(e) { console.error(e); }
+        }
+
+        function checkBusy(time, busySlots, court) {
+            const t = parseInt(time.replace(':',''));
+            return busySlots.some(b => {
+                if (b.courtId !== court) return false;
+                const s = parseInt(b.start.replace(':','')), e = (b.end === "00:00") ? 2400 : parseInt(b.end.replace(':',''));
+                return t >= s && t < e;
+            });
+        }
+
+        function updateEnd() {
+            const start = document.getElementById('startTime').value;
+            if(!start) return;
+            const idx = times.indexOf(start);
+            let opt = "";
+            for(let i=idx+1; i<times.length; i++) opt += `<option value="${times[i]}">${times[i]}</option>`;
+            opt += `<option value="00:00">00:00</option>`;
+            document.getElementById('endTime').innerHTML = opt;
+        }
+
+        async function book() {
+            const phone = document.getElementById('userPhone').value;
+            if(phone.length < 9) return alert("กรุณากรอกเบอร์โทรศัพท์");
+            const btn = document.getElementById('btn');
+            btn.disabled = true; btn.innerText = "⏳ กำลังจอง...";
+            const data = {
+                action: "booking", userId: localStorage.getItem('userId'), userName: localStorage.getItem('userName'),
+                phone: phone, courtId: document.getElementById('courtId').value, date: document.getElementById('bookingDate').value,
+                startTime: document.getElementById('startTime').value, endTime: document.getElementById('endTime').value
+            };
+            try {
+                const res = await fetch(CONFIG.WEB_APP_URL, { method: "POST", body: JSON.stringify(data) });
+                const result = await res.json();
+                if(result.status === "Success") {
+                    currentBookingId = result.bookingId;
+                    document.getElementById('paymentModal').style.display = 'flex';
+                }
+            } catch(e) { alert("เกิดข้อผิดพลาด"); btn.disabled = false; btn.innerText = "ยืนยันการจองสนาม"; }
+        }
+
+        async function uploadSlip() {
+            if (!compressedImg) return alert("กรุณาเลือกไฟล์สลิป");
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true; btn.innerText = "⏳ กำลังส่ง...";
+            try {
+                const res = await fetch(CONFIG.WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "uploadSlip", bookingId: currentBookingId, slipImage: compressedImg })
+                });
+                if(await res.text() === "Success") {
+                    alert("✅ ส่งหลักฐานเรียบร้อย!");
+                    window.location.href = "my-bookings.html";
+                }
+            } catch (err) { alert("อัปโหลดไม่สำเร็จ"); btn.disabled = false; btn.innerText = "ส่งหลักฐานการโอน"; }
+        }
+
+        function logout() { localStorage.clear(); window.location.href = "login.html"; }
+    </script>
+</body>
+</html>

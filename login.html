@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - SHIN-SHO Badminton</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-soft: #1a237e; /* สีน้ำเงินอ่อน/กลาง */
+            --primary-dark: #1a237e; 
+            --accent: #00c853;  
+            --bg-soft: #f0f2f5;    
+            --white: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-soft);
+            margin: 0;
+            color: var(--text);
+        }
+
+        /* Navbar ปรับเป็นสีน้ำเงินอ่อน */
+        header {
+            background: var(--primary-dark); 
+            padding: 15px 5%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo { font-size: 22px; font-weight: 600; color: var(--white); letter-spacing: 1px; }
+
+        .hero {
+            position: relative;
+            height: 300px; /* ปรับเล็กลงนิดนึงให้ดูคลีน */
+            background: url('b1.jpg') center/cover no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(57, 73, 171, 0.4); /* Overlay น้ำเงินอ่อนโปร่งแสง */
+        }
+
+        .hero-content { position: relative; z-index: 1; }
+        .hero-content h2 { font-size: 28px; margin: 0; text-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+
+        .container { 
+            max-width: 400px; 
+            margin: -50px auto 40px; 
+            position: relative; 
+            z-index: 10; 
+            padding: 0 20px; 
+        }
+        
+        .login-card {
+            background: var(--white);
+            padding: 35px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border-top: 4px solid var(--primary-soft);
+        }
+
+        .card-title {
+            text-align: center;
+            font-size: 22px;
+            color: var(--primary-soft);
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; color: #5c6bc0; font-size: 14px; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Kanit';
+            box-sizing: border-box;
+            background: #fcfdfe;
+            transition: 0.2s;
+        }
+
+        input:focus { 
+            border-color: var(--primary-soft); 
+            outline: none; 
+            background: white;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-soft);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 5px;
+        }
+
+        .btn-login:hover { 
+            background: var(--primary-dark); 
+            transform: translateY(-2px); 
+        }
+
+        #status { text-align: center; margin-top: 15px; font-size: 14px; min-height: 20px; }
+
+        .links {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 13px;
+            color: #777;
+        }
+        .links a { color: var(--primary-soft); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">SHIN-SHO BADMINTON</div>
+</header>
+
+<section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <h2>เข้าสู่ระบบสมาชิก</h2>
+    </div>
+</section>
+
+<div class="container">
+    <div class="login-card">
+        <div class="card-title">Login</div>
+        
+        <div class="form-group">
+            <label>อีเมล</label>
+            <input type="email" id="email" placeholder="example@email.com">
+        </div>
+
+        <div class="form-group">
+            <label>รหัสผ่าน</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+
+        <button class="btn-login" onclick="handleLogin()" id="loginBtn">เข้าสู่ระบบ</button>
+        <div id="status"></div>
+
+        <div class="links">
+            ยังไม่มีบัญชีสมาชิก? <a href="register.html">สมัครสมาชิก</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ส่วน JavaScript เดิมของคุณ (แก้ status.style.color ให้เป็นสีน้ำเงินอ่อน)
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzCt_IsG1KuXnfSm2_oaNHAsQo1XJmrm7nxjmtUpOnfeoJZnU7YU4agU7c5LNt8qlJu3A/exec";
+
+    async function handleLogin() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const status = document.getElementById('status');
+        const btn = document.getElementById('loginBtn');
+
+        if (!email || !password) {
+            status.innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
+            status.style.color = "#ef4444";
+            return;
+        }
+
+        status.innerText = "⏳ กำลังตรวจสอบ...";
+        status.style.color = "#3949ab"; 
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`${WEB_APP_URL}?action=login&email=${email}&password=${password}`);
+            const data = await response.json();
+
+            if (data.status === "success") {
+                localStorage.setItem('userId', data.user.id);
+                localStorage.setItem('userName', data.user.name);
+                localStorage.setItem('userRole', data.user.role);
+                status.innerText = "✅ สำเร็จ!";
+                status.style.color = "#00c853";
+                setTimeout(() => {
+                    window.location.href = (data.user.role === 'admin') ? "admin.html" : "index.html";
+                }, 800);
+            } else {
+                status.innerText = "❌ ข้อมูลไม่ถูกต้อง";
+                status.style.color = "#ef4444";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            status.innerText = "❌ ข้อผิดพลาดการเชื่อมต่อ";
+            status.style.color = "#ef4444";
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
